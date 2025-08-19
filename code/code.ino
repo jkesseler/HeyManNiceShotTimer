@@ -51,7 +51,7 @@ BluetoothA2DPSource a2dp_source;
 String currentBluetoothDeviceName = "LEXON MINO L";
 bool currentBluetoothAutoReconnect = false;
 int currentBluetoothVolume = 80;
-int currentBluetoothAudioOffsetMs = 0; 
+int currentBluetoothAudioOffsetMs = 0;
 bool bluetoothJustConnected = false;
 bool bluetoothJustDisconnected = false;
 
@@ -60,7 +60,7 @@ volatile int btBeepFrequency = 0;
 volatile unsigned long btBeepScheduledStartTime = 0;
 volatile unsigned int btBeepDurationVolatile = 0;
 volatile bool new_bt_beep_request = false;
-volatile bool current_bt_beep_is_active = false; 
+volatile bool current_bt_beep_is_active = false;
 volatile unsigned long current_bt_beep_actual_end_time = 0;
 
 // --- Timer State Variables ---
@@ -128,47 +128,47 @@ float peakRecoilValue = 0.0f;
 // AVRC metadata is defined in bluetooth_utils.cpp
 
 // --- FreeRTOS Handles ---
-QueueHandle_t buzzerQueue = NULL; 
-TaskHandle_t buzzerTaskHandle = NULL; 
+QueueHandle_t buzzerQueue = NULL;
+TaskHandle_t buzzerTaskHandle = NULL;
 
 // Forward declaration for the task function (defined in audio_utils.cpp)
-void buzzerTask(void *pvParameters); 
+void buzzerTask(void *pvParameters);
 
 // --- Setup ---
 void setup() {
     StickCP2.begin();
 
-    preferences.begin(NVS_NAMESPACE, false); 
-    loadSettings(); 
+    preferences.begin(NVS_NAMESPACE, false);
+    loadSettings();
 
     StickCP2.Lcd.setRotation(screenRotationSetting);
     StickCP2.Lcd.setTextColor(WHITE, BLACK);
     StickCP2.Lcd.setTextDatum(MC_DATUM);
-    StickCP2.Lcd.setTextFont(0); 
+    StickCP2.Lcd.setTextFont(0);
 
     pinMode(BUZZER_PIN, OUTPUT);
     digitalWrite(BUZZER_PIN, LOW);
     pinMode(BUZZER_PIN_2, OUTPUT);
     digitalWrite(BUZZER_PIN_2, LOW);
 
-    StickCP2.Speaker.end(); 
+    StickCP2.Speaker.end();
 
     if (!micPeakRMS.begin(StickCP2)) {
         displayBootScreen("ERROR", "", "Mic Init Failed!");
         // playUnsuccessBeeps(); // Buzzer task not running yet
-        while(true); 
+        while(true);
     }
     micPeakRMS.resetPeak();
 
     if (!StickCP2.Imu.begin()) {
         displayBootScreen("WARNING", "", "IMU Init Failed!");
-        // playUnsuccessBeeps(); 
+        // playUnsuccessBeeps();
         delay(2000);
     }
 
     if(!LittleFS.begin()){
         displayBootScreen("ERROR", "", "FS Failed!");
-        // playUnsuccessBeeps(); 
+        // playUnsuccessBeeps();
         delay(2000);
         filesystem_ok_for_boot = false;
     } else {
@@ -183,13 +183,13 @@ void setup() {
     }
 
     xTaskCreatePinnedToCore(
-        buzzerTask,          
-        "BuzzerTask",        
-        BUZZER_TASK_STACK_SIZE, 
-        NULL,                
-        1,                   
-        &buzzerTaskHandle,   
-        0);                  
+        buzzerTask,
+        "BuzzerTask",
+        BUZZER_TASK_STACK_SIZE,
+        NULL,
+        1,
+        &buzzerTaskHandle,
+        0);
 
     if (buzzerTaskHandle == NULL) {
          displayBootScreen("ERROR", "", "Task Fail!");
@@ -198,23 +198,23 @@ void setup() {
     // --- End Buzzer Task Setup ---
 
 
-    checkBattery(); 
+    checkBattery();
 
-    a2dp_source.set_auto_reconnect(false); 
+    a2dp_source.set_auto_reconnect(false);
     a2dp_source.set_data_callback_in_frames(get_data_frames);
     a2dp_source.set_volume(currentBluetoothVolume);
     a2dp_source.set_on_connection_state_changed(a2dp_connection_state_changed_callback);
-    a2dp_source.set_ssid_callback(a2dp_ssid_callback); 
+    a2dp_source.set_ssid_callback(a2dp_ssid_callback);
     // a2dp_source.set_avrc_metadata(avrc_metadata);
 
     if (currentBluetoothAutoReconnect && !currentBluetoothDeviceName.isEmpty()) {
-        a2dp_source.start((char*)currentBluetoothDeviceName.c_str()); 
+        a2dp_source.start((char*)currentBluetoothDeviceName.c_str());
     }
 
     StickCP2.Lcd.fillScreen(BLACK);
     displayBootScreen("Hey Man, Nice Shot", "Timer", "Initialization Complete!");
-    playSuccessBeeps(); 
-    delay(500); 
+    playSuccessBeeps();
+    delay(500);
 
     resetActivityTimer();
 
@@ -224,7 +224,7 @@ void setup() {
         lastFrameTime = 0;
         StickCP2.Lcd.fillScreen(BLACK);
     } else {
-        delay(1000); 
+        delay(1000);
         setState(MODE_SELECTION);
         currentMenuSelection = (int)currentMode;
         menuScrollOffset = 0;
@@ -238,25 +238,25 @@ void loop() {
     unsigned long currentTime = millis();
 
     if (bluetoothJustConnected) {
-        playSuccessBeeps(); 
+        playSuccessBeeps();
         bluetoothJustConnected = false;
         if(currentState == SETTINGS_MENU_BLUETOOTH || currentState == BLUETOOTH_SCANNING || currentState == MODE_SELECTION) {
             redrawMenu = true;
         }
     }
     if (bluetoothJustDisconnected) {
-        playUnsuccessBeeps(); 
+        playUnsuccessBeeps();
         bluetoothJustDisconnected = false;
         if(currentState == SETTINGS_MENU_BLUETOOTH || currentState == BLUETOOTH_SCANNING || currentState == MODE_SELECTION) {
             redrawMenu = true;
         }
     }
 
-    if (enableAutoSleep && 
-        currentState != BOOT_SCREEN && 
-        currentState != BOOT_JPG_SEQUENCE && 
-        currentState != BLUETOOTH_SCANNING && 
-        !a2dp_source.is_connected() ) { 
+    if (enableAutoSleep &&
+        currentState != BOOT_SCREEN &&
+        currentState != BOOT_JPG_SEQUENCE &&
+        currentState != BLUETOOTH_SCANNING &&
+        !a2dp_source.is_connected() ) {
         if (currentTime - lastActivityTime > AUTO_SLEEP_TIMEOUT_MS) {
             StickCP2.Lcd.fillScreen(BLACK);
             StickCP2.Lcd.setTextDatum(MC_DATUM);
@@ -265,13 +265,13 @@ void loop() {
             StickCP2.Lcd.sleep();
             StickCP2.Lcd.waitDisplay();
 
-            esp_sleep_enable_ext1_wakeup((1ULL << 37), ESP_EXT1_WAKEUP_ALL_LOW); 
+            esp_sleep_enable_ext1_wakeup((1ULL << 37), ESP_EXT1_WAKEUP_ALL_LOW);
             esp_light_sleep_start();
 
             StickCP2.Lcd.wakeup();
-            delay(200); 
+            delay(200);
             resetActivityTimer();
-            redrawMenu = true; 
+            redrawMenu = true;
         }
     }
 
@@ -284,19 +284,19 @@ void loop() {
 
     if (currentTime - lastBatteryCheckTime > BATTERY_CHECK_INTERVAL_MS) {
         checkBattery();
-        if (currentState == DEVICE_STATUS || currentState == LIST_FILES || 
-            currentState == MODE_SELECTION || currentState == SETTINGS_MENU_BLUETOOTH || 
-            currentState == BLUETOOTH_SCANNING || lowBatteryWarning) { 
+        if (currentState == DEVICE_STATUS || currentState == LIST_FILES ||
+            currentState == MODE_SELECTION || currentState == SETTINGS_MENU_BLUETOOTH ||
+            currentState == BLUETOOTH_SCANNING || lowBatteryWarning) {
              redrawMenu = true;
         }
     }
 
     if (StickCP2.BtnB.isPressed()) {
-        resetActivityTimer(); 
+        resetActivityTimer();
         if (btnTopPressTime == 0) {
             btnTopPressTime = currentTime;
         } else if (!btnTopHeld && (currentTime - btnTopPressTime > LONG_PRESS_DURATION_MS)) {
-            btnTopHeld = true; 
+            btnTopHeld = true;
 
             bool exitToModeSelect = (currentState == LIVE_FIRE_READY || currentState == LIVE_FIRE_TIMING || currentState == LIVE_FIRE_STOPPED ||
                                      currentState == DRY_FIRE_READY || currentState == DRY_FIRE_RUNNING ||
@@ -305,18 +305,18 @@ void loop() {
             if (exitToModeSelect) {
                 playUnsuccessBeeps();
                 setState(MODE_SELECTION);
-                currentMenuSelection = (int)currentMode; 
+                currentMenuSelection = (int)currentMode;
                 menuScrollOffset = 0;
                 StickCP2.Lcd.fillScreen(BLACK);
             }
             else if (currentState != SETTINGS_MENU_MAIN && currentState != SETTINGS_MENU_GENERAL &&
                      currentState != SETTINGS_MENU_BEEP && currentState != SETTINGS_MENU_BLUETOOTH &&
                      currentState != SETTINGS_MENU_DRYFIRE && currentState != SETTINGS_MENU_NOISY &&
-                     currentState != BLUETOOTH_SCANNING && 
-                     currentState != DEVICE_STATUS && currentState != LIST_FILES && 
-                     currentState != EDIT_SETTING && currentState != CALIBRATE_THRESHOLD && 
+                     currentState != BLUETOOTH_SCANNING &&
+                     currentState != DEVICE_STATUS && currentState != LIST_FILES &&
+                     currentState != EDIT_SETTING && currentState != CALIBRATE_THRESHOLD &&
                      currentState != CALIBRATE_RECOIL &&
-                     currentState != BOOT_JPG_SEQUENCE) 
+                     currentState != BOOT_JPG_SEQUENCE)
             {
                 setState(SETTINGS_MENU_MAIN);
                 StickCP2.Lcd.fillScreen(BLACK);
@@ -326,16 +326,16 @@ void loop() {
             }
         }
     } else {
-        btnTopPressTime = 0; 
-        btnTopHeld = false;  
+        btnTopPressTime = 0;
+        btnTopHeld = false;
     }
 
     switch (currentState) {
-        case BOOT_SCREEN: break; 
+        case BOOT_SCREEN: break;
 
         case BOOT_JPG_SEQUENCE:
             {
-                if (currentState != BOOT_JPG_SEQUENCE) break; 
+                if (currentState != BOOT_JPG_SEQUENCE) break;
                 if (StickCP2.BtnA.wasClicked()) {
                     resetActivityTimer();
                     setState(MODE_SELECTION);
@@ -360,14 +360,14 @@ void loop() {
                         }
                         currentJpgFrame++;
                         lastFrameTime = currentTime;
-                    } else { 
+                    } else {
                         setState(MODE_SELECTION);
                     }
                 }
-                 if (currentState == MODE_SELECTION) { 
+                 if (currentState == MODE_SELECTION) {
                     currentMenuSelection = (int)currentMode;
                     menuScrollOffset = 0;
-                    StickCP2.Lcd.fillScreen(BLACK); 
+                    StickCP2.Lcd.fillScreen(BLACK);
                  }
             }
             break;
@@ -385,10 +385,10 @@ void loop() {
                 resetActivityTimer();
                 if (previousState == NOISY_RANGE_TIMING || previousState == NOISY_RANGE_GET_READY || currentMode == MODE_NOISY_RANGE) {
                      setState(NOISY_RANGE_READY);
-                } else if (previousState == DRY_FIRE_RUNNING || currentMode == MODE_DRY_FIRE) { 
-                    setState(DRY_FIRE_READY); 
+                } else if (previousState == DRY_FIRE_RUNNING || currentMode == MODE_DRY_FIRE) {
+                    setState(DRY_FIRE_READY);
                 }
-                else { 
+                else {
                     setState(LIVE_FIRE_READY);
                 }
                 StickCP2.Lcd.fillScreen(BLACK);
@@ -411,9 +411,9 @@ void loop() {
         case LIST_FILES:              handleListFilesInput(); break;
         case CALIBRATE_THRESHOLD:
         case CALIBRATE_RECOIL:        handleCalibrationInput(currentState); break;
-        default: break; 
+        default: break;
     }
-    vTaskDelay(pdMS_TO_TICKS(10)); 
+    vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 // --- Buzzer Task Definition Removed ---
